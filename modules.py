@@ -114,6 +114,12 @@ def get_sizes(model, input_shape=(3, 224, 224), leaf_modules=None):
     return np.array(sizes, dtype=object)[idxs], np.array(mods, dtype=object)[idxs]
 
 
+def group_norm(num_channels, eps=1e-5, affine=True):
+    # n_groups = min(32, num_channels//4)
+    n_groups = 32
+    return nn.GroupNorm(n_groups, num_channels, eps=eps, affine=affine)
+
+
 def bn_drop_lin(n_in, n_out, bn=True, p=0.0, actn=None, norm_layer=nn.BatchNorm1d):
     layers = [norm_layer(n_in)] if bn else []
     if p != 0:
@@ -289,3 +295,44 @@ class LastCross(nn.Module):
         y = self.conv1(x)
         y = self.conv2(y)
         return x + y
+
+
+class CBR(nn.Module):
+    """"""
+
+    def __init__(
+        self,
+        kernel_size,
+        n_kernels,
+        n_layers,
+        n_classes=2,
+        in_chans=3,
+        norm_layer=nn.BatchNorm2d,
+    ):
+        super().__init__()
+        in_c = in_chans
+        out_c = n_kernels
+        for k in range(n_layers):
+            self.add_module(
+                f"cbr{k}",
+                ConvBnRelu(
+                    in_c,
+                    out_c,
+                    kernel_size,
+                    stride=2,
+                    padding=kernel_size // 2,
+                    padding_mode="reflect",
+                    norm_layer=norm_layer,
+                ),
+            )
+            # self.add_module(f'maxpool{k}', nn.MaxPool2d(3, stride=2, padding=1))
+            in_c = out_c
+            out_c *= 2
+        self.gap = nn.AdaptiveAvgPool2d(1)
+        self.flat = nn.Flatten()
+        self.fc = nn.Linear(out_c, n_classes)
+
+    def forward(self, x):
+        for m in self.children():
+            x = m(x)
+        return x

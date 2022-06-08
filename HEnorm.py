@@ -6,12 +6,14 @@ from torch.nn.functional import interpolate
 
 from color_converter import ColorConverter
 from modules import (
+    CBR,
     ConvBnRelu,
     DecoderBlock,
     Hooks,
     LastCross,
     PixelShuffleICNR,
     get_sizes,
+    group_norm,
     named_leaf_modules,
 )
 
@@ -23,19 +25,31 @@ class DynamicUnet(nn.Module):
         self, encoder_name, n_classes=2, input_shape=(3, 224, 224), pretrained=True
     ):
         super().__init__()
-        encoder = timm.create_model(
-            encoder_name,
-            pretrained=pretrained,
-            pretrained_strict=False,
-        )
-        cut = -2
+        norm_layer = nn.BatchNorm2d
+        if "cbr" in encoder_name:
+            args = map(int, encoder_name.split("_")[1:])
+            encoder = CBR(*args, norm_layer=norm_layer)
+            cut = -3
+        elif "cgr" in encoder_name:
+            args = map(int, encoder_name.split("_")[1:])
+            encoder = CBR(*args, norm_layer=group_norm)
+            norm_layer = group_norm
+            cut = -3
+        else:
+            encoder = timm.create_model(
+                encoder_name,
+                pretrained=pretrained,
+                norm_layer=norm_layer,
+                pretrained_strict=False,
+            )
+            cut = -2
 
         self.encoder = nn.Sequential(*(list(encoder.children())[:cut] + [nn.ReLU()]))
         encoder_sizes, idxs = self._register_output_hooks(input_shape=input_shape)
         n_chans = int(encoder_sizes[-1][1])
         middle_conv = nn.Sequential(
-            ConvBnRelu(n_chans, n_chans // 2, 3),
-            ConvBnRelu(n_chans // 2, n_chans, 3),
+            ConvBnRelu(n_chans, n_chans // 2, 3, norm_layer=norm_layer),
+            ConvBnRelu(n_chans // 2, n_chans, 3, norm_layer=norm_layer),
         )
         decoder = [middle_conv]
         for k, (idx, hook) in enumerate(zip(idxs[::-1], self.hooks)):
@@ -47,6 +61,7 @@ class DynamicUnet(nn.Module):
                     skip_chans,
                     hook,
                     final_div=final_div,
+                    norm_layer=norm_layer,
                 )
             )
             n_chans = n_chans // 2 + skip_chans
@@ -54,7 +69,7 @@ class DynamicUnet(nn.Module):
         self.decoder = nn.Sequential(*decoder, PixelShuffleICNR(n_chans, n_chans))
         self.head = nn.Sequential(
             nn.Conv2d(n_chans + input_shape[0], n_chans, 1),
-            LastCross(n_chans),
+            LastCross(n_chans, norm_layer=norm_layer),
             nn.Conv2d(n_chans, n_classes, 1),
         )
 
