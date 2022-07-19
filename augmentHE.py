@@ -1,13 +1,37 @@
-from albumentations import ImageOnlyTransform
-from staintools.stain_extraction.vahadane_stain_extractor import VahadaneStainExtractor
-from staintools.miscellaneous.get_concentrations import get_concentrations
-from types import Optional, Any, List
 from numbers import Number
+from types import Any, List, Optional
+from typing import Dict, Union
+
 import numpy as np
+from albumentations import ImageOnlyTransform
 from nptyping import NDArray
+from staintools.miscellaneous.get_concentrations import get_concentrations
+from staintools.stain_extraction.vahadane_stain_extractor import VahadaneStainExtractor
 
 
 class StainAugmentor(ImageOnlyTransform):
+    """
+    Albumentation transform class implementation of AugmentHE.
+
+    Args:
+        alpha_range: defines the range to use when randomly picking the multiplicative
+            coefficients for the density matrix. The draw interval is defined as
+            [1-alpha_range, 1+alpha_range].
+        beta_range: defines the range to use when randomly picking the additive
+            coefficients for the density matrix. The draw interval is defined as
+            [-beta_range, beta_range].
+        alpha_stain_range: defines the range to use when randomly picking the
+            multiplicative coefficients for the stain matrix. The draw interval is
+            defined as [1-alpha_stain_range, 1+alpha_stain_range].
+        beta_stain_range: defines the range to use when randomly picking the
+            additive coefficients for the stain matrix. The draw interval is
+            defined as [-beta_stain_range, beta_stain_range].
+        he_ratio: ratio between the H coefficients and the E coefficients. Rangeq
+            defined above are multiplied by this value when drawing H coefficients.
+        always_apply: whether to always apply this transform.
+        p: probability to apply this transform.
+    """
+
     def __init__(
         self,
         alpha_range: float = 0.4,
@@ -25,7 +49,9 @@ class StainAugmentor(ImageOnlyTransform):
         self.beta_stain_range = beta_stain_range
         self.he_ratio = he_ratio
 
-    def get_params(self):
+    def get_params(
+        self,
+    ) -> Dict[str, Union[NDArray[(2,), float], NDArray[(2, 3), float]]]:
         return {
             "alpha": np.random.uniform(
                 1 - self.alpha_range, 1 + self.alpha_range, size=2

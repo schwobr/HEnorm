@@ -1,7 +1,9 @@
-import torch.nn as nn
-import torch
-import timm
+from typing import Tuple
+
 import numpy as np
+import timm
+import torch
+import torch.nn as nn
 from torch.nn.functional import interpolate
 
 from color_converter import ColorConverter
@@ -19,10 +21,23 @@ from modules import (
 
 
 class DynamicUnet(nn.Module):
-    """"""
+    """
+    Create a Unet architecture with a custome encoder. Implementation taken from fastai.
+
+    Args:
+        encoder_name: name of the encoder to use. Can be any model registered in timm.
+            a CBR or a CGR (see modules).
+        n_classes: number of classes / output channels.
+        input_shape: shape of image tensor inputs.
+        pretrained: whether to use a pretrained model. Only available for timm encoders.
+    """
 
     def __init__(
-        self, encoder_name, n_classes=2, input_shape=(3, 224, 224), pretrained=True
+        self,
+        encoder_name: str,
+        n_classes: int = 2,
+        input_shape: Tuple[int, int, int] = (3, 224, 224),
+        pretrained: bool = True,
     ):
         super().__init__()
         norm_layer = nn.BatchNorm2d
@@ -104,13 +119,21 @@ class DynamicUnet(nn.Module):
 
 
 class Normalizer(nn.Module):
-    """"""
+    """
+    Normalizer module that takes a RGB image as input and returns the normalized version
+    using HEnorm method.
 
-    def __init__(self, model_name, input_size=1024, pretrained=True):
+    Args:
+        encoder_name: name of the encoder to use. Can be any model registered in timm.
+        input_size: side size the input image.
+        pretrained: whether to use a pretrained model. Only available for timm encoders.
+    """
+
+    def __init__(self, encoder_name, input_size=1024, pretrained=True):
         super().__init__()
         input_shape = (3, input_size, input_size)
         self.unet = DynamicUnet(
-            model_name,
+            encoder_name,
             n_classes=3,
             input_shape=input_shape,
             pretrained=pretrained,
