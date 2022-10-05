@@ -33,6 +33,13 @@ model = Normalizer("cgr_5_32_4")
 
 You can then train this model using a reference dataset and AugmentHE.
 
+You can also use our pretrained weights on $1024 \times 1024$ images at level 1 $(0.5 \mu m/px)$.
+```python
+norm = torch.jit.load("norm_1024_1.pt").eval()
+x_norm = norm(x) # x must be a tensor of shape [n, c, h, w]
+```
+
+
 ## Transforms
 
 All set of transforms described in the paper can be found in [transforms.py](transforms.py).
