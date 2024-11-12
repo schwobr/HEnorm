@@ -1,6 +1,5 @@
 from numbers import Number
-from types import Any, List, Optional
-from typing import Dict, Union
+from typing import Dict, Union, Any, List, Optional
 
 import numpy as np
 from albumentations import ImageOnlyTransform
@@ -104,7 +103,7 @@ class StainAugmentor(ImageOnlyTransform):
         if not image.dtype == np.uint8:
             image = (image * 255).astype(np.uint8)
         stain_matrix = VahadaneStainExtractor.get_stain_matrix(image)
-        HE = get_concentrations(image, self.stain_matrix)
+        HE = get_concentrations(image, stain_matrix)
         stain_matrix = stain_matrix * alpha_stain + beta_stain
         stain_matrix = np.clip(stain_matrix, 0, 1)
         HE = np.where(HE > 0.2, HE * alpha[None] + beta[None], HE)
