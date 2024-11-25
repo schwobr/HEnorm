@@ -1,6 +1,6 @@
 # HEnorm
 
-This repository contains the official implementation of [Bias reduction using combined stain normalization and augmentation for AI-based classification of histological images](https://arxiv.org/). This code was tested with python 3.7 and softwares listed in [requirements](requirements.txt). In order to use it, please install required dependencies by running:
+This repository contains the official implementation of [Bias reduction using combined stain normalization and augmentation for AI-based classification of histological images](https://www.sciencedirect.com/science/article/pii/S0010482524002142). This code was tested with python 3.7 and softwares listed in [requirements](requirements.txt). In order to use it, please install required dependencies by running:
 ```bash
 pip install -r requirements.txt
 ```
