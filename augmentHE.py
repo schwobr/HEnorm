@@ -40,7 +40,7 @@ class StainAugmentor(ImageOnlyTransform):
         he_ratio: float = 0.3,
         always_apply: bool = True,
         p: float = 1,
-        seed: int = 12345,
+        seed: Optional[int] = None,
     ):
         super(StainAugmentor, self).__init__(always_apply, p)
         self.alpha_range = alpha_range
@@ -48,7 +48,10 @@ class StainAugmentor(ImageOnlyTransform):
         self.alpha_stain_range = alpha_stain_range
         self.beta_stain_range = beta_stain_range
         self.he_ratio = he_ratio
-        self.rng = np.random.default_rng(seed=seed)
+        if seed is None:
+            self.rng = np.random
+        else:
+            self.rng = np.random.default_rng(seed=seed)
 
     def get_params(
         self,
