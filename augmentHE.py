@@ -40,6 +40,7 @@ class StainAugmentor(ImageOnlyTransform):
         he_ratio: float = 0.3,
         always_apply: bool = True,
         p: float = 1,
+        seed: Optional[int] = None,
     ):
         super(StainAugmentor, self).__init__(always_apply, p)
         self.alpha_range = alpha_range
@@ -47,23 +48,27 @@ class StainAugmentor(ImageOnlyTransform):
         self.alpha_stain_range = alpha_stain_range
         self.beta_stain_range = beta_stain_range
         self.he_ratio = he_ratio
+        if seed is None:
+            self.rng = np.random
+        else:
+            self.rng = np.random.default_rng(seed=seed)
 
     def get_params(
         self,
     ) -> Dict[str, Union[NDArray[(2,), float], NDArray[(2, 3), float]]]:
         return {
-            "alpha": np.random.uniform(
+            "alpha": self.rng.uniform(
                 1 - self.alpha_range, 1 + self.alpha_range, size=2
             ),
-            "beta": np.random.uniform(-self.beta_range, self.beta_range, size=2),
+            "beta": self.rng.uniform(-self.beta_range, self.beta_range, size=2),
             "alpha_stain": np.stack(
                 (
-                    np.random.uniform(
+                    self.rng.uniform(
                         1 - self.alpha_stain_range * self.he_ratio,
                         1 + self.alpha_stain_range * self.he_ratio,
                         size=3,
                     ),
-                    np.random.uniform(
+                    self.rng.uniform(
                         1 - self.alpha_stain_range,
                         1 + self.alpha_stain_range,
                         size=3,
@@ -72,12 +77,12 @@ class StainAugmentor(ImageOnlyTransform):
             ),
             "beta_stain": np.stack(
                 (
-                    np.random.uniform(
+                    self.rng.uniform(
                         -self.beta_stain_range * self.he_ratio,
                         self.beta_stain_range * self.he_ratio,
                         size=3,
                     ),
-                    np.random.uniform(
+                    self.rng.uniform(
                         -self.beta_stain_range, self.beta_stain_range, size=3
                     ),
                 ),
